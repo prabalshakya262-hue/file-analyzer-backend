@@ -1,8 +1,8 @@
 services:
   - type: web
     name: file-analyzer-api
-    env: docker
-    dockerfilePath: ./backend/Dockerfile
+    runtime: docker
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: REDIS_URL
         fromService:
@@ -14,7 +14,7 @@ services:
           name: file-analyzer-db
           property: connectionString
       - key: SECRET_KEY
-        generateValue: true
+        sync: false
       - key: OPENAI_API_KEY
         sync: false
       - key: ENABLE_APK_HARDENING
@@ -25,11 +25,31 @@ services:
         value: "openai"
       - key: ENABLE_DYNAMIC_ANALYSIS
         value: "false"
+      - key: ENABLE_ORIGINAL_SIGNING
+        value: "true"
+      - key: CODE_SIGN_CERT_PATH
+        sync: false
+      - key: CODE_SIGN_CERT_PASSWORD
+        sync: false
+      - key: CODE_SIGN_KEY_ALIAS
+        sync: false
+      - key: CUCKOO_API_URL
+        sync: false
+      - key: MOBSF_API_URL
+        sync: false
+      - key: APKTOOL_PATH
+        value: "apktool"
+      - key: LLM_MODEL
+        value: "gpt-4-turbo-preview"
+      - key: MAX_FILE_SIZE
+        value: "52428800"
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "10"
 
   - type: worker
     name: file-analyzer-worker
-    env: docker
-    dockerfilePath: ./backend/Dockerfile
+    runtime: docker
+    dockerfilePath: ./Dockerfile
     command: celery -A app.celery_app.celery_app worker --loglevel=info --concurrency=2
     envVars:
       - key: REDIS_URL
@@ -51,6 +71,28 @@ services:
         value: "true"
       - key: LLM_PROVIDER
         value: "openai"
+      - key: ENABLE_DYNAMIC_ANALYSIS
+        value: "false"
+      - key: ENABLE_ORIGINAL_SIGNING
+        value: "true"
+      - key: CODE_SIGN_CERT_PATH
+        sync: false
+      - key: CODE_SIGN_CERT_PASSWORD
+        sync: false
+      - key: CODE_SIGN_KEY_ALIAS
+        sync: false
+      - key: CUCKOO_API_URL
+        sync: false
+      - key: MOBSF_API_URL
+        sync: false
+      - key: APKTOOL_PATH
+        value: "apktool"
+      - key: LLM_MODEL
+        value: "gpt-4-turbo-preview"
+      - key: MAX_FILE_SIZE
+        value: "52428800"
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "10"
 
   - type: redis
     name: file-analyzer-redis
