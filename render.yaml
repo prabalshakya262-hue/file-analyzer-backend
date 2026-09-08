@@ -50,13 +50,7 @@ services:
     name: file-analyzer-worker
     runtime: docker
     dockerfilePath: Dockerfile
-    command:
-      - celery
-      - -A
-      - app.celery_app.celery_app
-      - worker
-      - --loglevel=info
-      - --concurrency=2
+    command: ["celery", "-A", "app.celery_app.celery_app", "worker", "--loglevel=info", "--concurrency=2"]
     envVars:
       - key: REDIS_URL
         fromService:
