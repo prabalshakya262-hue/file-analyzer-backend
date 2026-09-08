@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: analyzer
+      POSTGRES_PASSWORD: analyzerpass
+      POSTGRES_DB: file_analyzer
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  redis:
+    image: redis:7
+    networks:
+      - backend
+
+  backend:
+    build: ./backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://analyzer:analyzerpass@postgres:5432/file_analyzer
+      - SECRET_KEY=${SECRET_KEY:-change-me}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ENABLE_DYNAMIC_ANALYSIS=${ENABLE_DYNAMIC_ANALYSIS:-false}
+      - CUCKOO_API_URL=${CUCKOO_API_URL:-}
+      - CUCKOO_API_TOKEN=${CUCKOO_API_TOKEN:-}
+      - MOBSF_API_URL=${MOBSF_API_URL:-}
+      - MOBSF_API_KEY=${MOBSF_API_KEY:-}
+      - ENABLE_APK_HARDENING=${ENABLE_APK_HARDENING:-true}
+      - ENABLE_PE_HARDENING=${ENABLE_PE_HARDENING:-true}
+      - ENABLE_ORIGINAL_SIGNING=${ENABLE_ORIGINAL_SIGNING:-true}
+      - APKTOOL_PATH=${APKTOOL_PATH:-apktool}
+      - CODE_SIGN_CERT_PATH=${CODE_SIGN_CERT_PATH:-}
+      - CODE_SIGN_CERT_PASSWORD=${CODE_SIGN_CERT_PASSWORD:-}
+      - CODE_SIGN_KEY_ALIAS=${CODE_SIGN_KEY_ALIAS:-}
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - EMAIL_FROM=${EMAIL_FROM:-}
+      - EMAIL_ENABLED=${EMAIL_ENABLED:-false}
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - backend
+
+  celery_worker:
+    build: ./backend
+    command: celery -A app.celery_app.celery_app worker --loglevel=info --concurrency=2
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://analyzer:analyzerpass@postgres:5432/file_analyzer
+      - SECRET_KEY=${SECRET_KEY:-change-me}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ENABLE_DYNAMIC_ANALYSIS=${ENABLE_DYNAMIC_ANALYSIS:-false}
+      - CUCKOO_API_URL=${CUCKOO_API_URL:-}
+      - CUCKOO_API_TOKEN=${CUCKOO_API_TOKEN:-}
+      - MOBSF_API_URL=${MOBSF_API_URL:-}
+      - MOBSF_API_KEY=${MOBSF_API_KEY:-}
+      - ENABLE_APK_HARDENING=${ENABLE_APK_HARDENING:-true}
+      - ENABLE_PE_HARDENING=${ENABLE_PE_HARDENING:-true}
+      - ENABLE_ORIGINAL_SIGNING=${ENABLE_ORIGINAL_SIGNING:-true}
+      - APKTOOL_PATH=${APKTOOL_PATH:-apktool}
+      - CODE_SIGN_CERT_PATH=${CODE_SIGN_CERT_PATH:-}
+      - CODE_SIGN_CERT_PASSWORD=${CODE_SIGN_CERT_PASSWORD:-}
+      - CODE_SIGN_KEY_ALIAS=${CODE_SIGN_KEY_ALIAS:-}
+      - LLM_PROVIDER=${LLM_PROVIDER:-openai}
+      - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - EMAIL_FROM=${EMAIL_FROM:-}
+      - EMAIL_ENABLED=${EMAIL_ENABLED:-false}
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - backend
+
+  frontend:
+    image: nginx:alpine
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - backend
+
+  ollama:
+    image: ollama/ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - backend
+
+volumes:
+  postgres_data:
+  ollama_data:
+
+networks:
+  backend:
