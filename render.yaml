@@ -5,14 +5,9 @@ services:
     dockerfilePath: Dockerfile
     envVars:
       - key: REDIS_URL
-        fromService:
-          name: file-analyzer-redis
-          type: redis
-          property: connectionString
+        sync: false
       - key: DATABASE_URL
-        fromDatabase:
-          name: file-analyzer-db
-          property: connectionString
+        sync: false
       - key: SECRET_KEY
         sync: false
       - key: OPENAI_API_KEY
@@ -45,60 +40,3 @@ services:
         value: "52428800"
       - key: RATE_LIMIT_PER_MINUTE
         value: "10"
-
-  - type: worker
-    name: file-analyzer-worker
-    runtime: docker
-    dockerfilePath: Dockerfile
-    dockerCommand: "celery -A app.celery_app.celery_app worker --loglevel=info --concurrency=2"
-    envVars:
-      - key: REDIS_URL
-        fromService:
-          name: file-analyzer-redis
-          type: redis
-          property: connectionString
-      - key: DATABASE_URL
-        fromDatabase:
-          name: file-analyzer-db
-          property: connectionString
-      - key: SECRET_KEY
-        sync: false
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: ENABLE_APK_HARDENING
-        value: "true"
-      - key: ENABLE_PE_HARDENING
-        value: "true"
-      - key: LLM_PROVIDER
-        value: "openai"
-      - key: ENABLE_DYNAMIC_ANALYSIS
-        value: "false"
-      - key: ENABLE_ORIGINAL_SIGNING
-        value: "true"
-      - key: CODE_SIGN_CERT_PATH
-        sync: false
-      - key: CODE_SIGN_CERT_PASSWORD
-        sync: false
-      - key: CODE_SIGN_KEY_ALIAS
-        sync: false
-      - key: CUCKOO_API_URL
-        sync: false
-      - key: MOBSF_API_URL
-        sync: false
-      - key: APKTOOL_PATH
-        value: "apktool"
-      - key: LLM_MODEL
-        value: "gpt-4-turbo-preview"
-      - key: MAX_FILE_SIZE
-        value: "52428800"
-      - key: RATE_LIMIT_PER_MINUTE
-        value: "10"
-
-  - type: redis
-    name: file-analyzer-redis
-    ipAllowList: []
-
-databases:
-  - name: file-analyzer-db
-    databaseName: file_analyzer
-    user: analyzer
